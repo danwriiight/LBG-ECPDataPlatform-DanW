@@ -82,17 +82,17 @@ module "bucket" {
   location = var.region
 }
 
-module "kms" {
-  source      = "../../modules/kms"
-  env         = var.env
-  region      = var.region
-  project_id  = var.project_id
+# module "kms" {
+#   source      = "../../modules/kms"
+#   env         = var.env
+#   region      = var.region
+#   project_id  = var.project_id
 
-  service_accounts = [
-    module.consumer_sa.service_account_email,
-    module.node_sa.service_account_email
-  ]
-}
+#   service_accounts = {
+#   consumer = module.consumer_sa.service_account_email
+#   node     = module.node_sa.service_account_email
+#   }
+# }
 
 module "dataset" {
   source = "../../modules/bigquery"
@@ -101,14 +101,16 @@ module "dataset" {
 }
 
 module "pubsub" {
-  source = "../../modules/pubsub"
-  name = "${var.project_id}-${var.env}-iot-topic"
+  source     = "../../modules/pubsub"
+  project_id = var.project_id
+  env        = var.env
 }
 
-module "project_services" {
-  source     = "../../modules/project_services"
-  project_id = var.project_id
-}
+
+# module "project_services" {
+#   source     = "../../modules/project_services"
+#   project_id = var.project_id
+# }
 
 module "nat" {
   source = "../../modules/nat"

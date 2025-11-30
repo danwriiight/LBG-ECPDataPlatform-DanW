@@ -11,7 +11,8 @@ variable "project_id" {
 }
 
 variable "service_accounts" {
-  type = list(string)
-  description = "Service accounts that need access to the CMEK key"
+  type        = map(string)
+  description = "Map of service accounts needing KMS key access"
 }
+
 

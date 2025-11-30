@@ -13,3 +13,7 @@ variable "env" {
   type    = string
   default = "dev"
 }
+
+# variable "service_accounts" {
+#   type = map(string)
+# }
