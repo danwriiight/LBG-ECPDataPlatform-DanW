@@ -76,10 +76,32 @@ module "producer_sa" {
   ]
 }
 
+module "cicd_sa" {
+  source       = "../../modules/iam"
+  name         = "${var.env}-cicd-deployer"
+  display_name = "GitLab CI Deployer SA"
+  project_id   = var.project_id
+
+  roles = [
+  "roles/storage.admin",
+  "roles/container.developer",
+  "roles/container.clusterViewer",
+  "roles/artifactregistry.writer"
+  ]
+
+}
+
 module "bucket" {
   source   = "../../modules/storage"
   name     = "${var.project_id}-${var.env}-data-bucket"
   location = var.region
+}
+
+module "artifact_repo" {
+  source        = "../../modules/artifact_registry"
+  repository_id = "iot-processor-repo"
+  location      = var.region        # e.g. europe-west2
+  description   = "Docker repository for IoT processor application"
 }
 
 # module "kms" {
