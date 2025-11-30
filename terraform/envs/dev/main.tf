@@ -12,8 +12,11 @@ module "gke" {
   location = var.region
   network = module.vpc.vpc_id
   subnetwork = module.vpc.subnets["${var.env}-gke-private-subnet"].id
-  # TODO - Validate CIDR for GKE Control Plane
+
+  # Control plane CIDR for private cluster
+  # TODO: consider rotating this range and aligning with org conventions
   master_cidr = "172.16.0.0/28"
+
   project_id = var.project_id
   node_service_account = module.node_sa.service_account_email
 }

@@ -20,13 +20,32 @@ resource "google_container_cluster" "gke" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
+# -----------------------------------------------------------
+  # PRIVATE CLUSTER: NODES PRIVATE, CONTROL PLANE PUBLIC
+  # -----------------------------------------------------------
   private_cluster_config {
     enable_private_nodes    = true
-    enable_private_endpoint = true
+
+    # Control plane MUST be public so GitLab SaaS can deploy.
+    # TODO: For production, set this back to true and deploy a 
+    #       GitLab Runner inside the VPC or restrict to GitLab IPs.
+    enable_private_endpoint = false
+
     master_ipv4_cidr_block  = var.master_cidr
   }
 
-  master_authorized_networks_config {}
+  # -----------------------------------------------------------
+  # MASTER AUTHORIZED NETWORKS (TEMPORARY OPEN)
+  # -----------------------------------------------------------
+  # This allows GitLab SaaS runners to access the GKE control plane.
+  # TODO: Tighten this to GitLab runner CIDRs or remove if running
+  #       a self-hosted runner inside the VPC.
+  master_authorized_networks_config {
+    cidr_blocks {
+      display_name = "TEMP-OPEN-FOR-CI"
+      cidr_block   = "0.0.0.0/0"
+    }
+  }
 }
 
 resource "google_container_node_pool" "primary" {
