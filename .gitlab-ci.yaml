@@ -1,0 +1,39 @@
+image: google/cloud-sdk:latest
+
+variables:
+  IMAGE_NAME: "iot-processor"
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+  IMAGE_URI: "gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG"
+
+stages:
+  - build
+  - deploy
+
+before_script:
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  - git clone "$GITHUB_REPO" repo
+  - cd repo/data_processing
+
+build:
+  stage: build
+  script:
+    - gcloud auth configure-docker gcr.io
+    - docker build -t $IMAGE_URI .
+    - docker push $IMAGE_URI
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  script:
+    - gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE --project $GCP_PROJECT_ID
+    - kubectl apply -f ../k8s/configmap.yaml
+    - kubectl set image deployment/iot-processor iot-processor=$IMAGE_URI -n default
+    - kubectl apply -f ../k8s/deployment.yaml
+  only:
+    - main

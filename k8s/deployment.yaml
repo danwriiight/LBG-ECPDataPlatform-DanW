@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iot-processor
+  namespace: default   # change if your namespace is different
   labels:
     app: iot-processor
 spec:
@@ -14,29 +15,19 @@ spec:
       labels:
         app: iot-processor
     spec:
-      serviceAccountName: iot-processor-sa   # Use Workload Identity
+      serviceAccountName: consumer-sa   # MUST match var.ksa_binding.ksa_name
+
       containers:
       - name: iot-processor
-        image: gcr.io/YOUR_PROJECT/iot-processor:latest
+        image: gcr.io/lbg-ecpdataplatform/iot-processor:latest
         imagePullPolicy: Always
-        env:
-        - name: PROJECT_ID
-          value: "YOUR_PROJECT"
-        - name: SUBSCRIPTION_ID
-          value: "iot-sub"
-        - name: BUCKET_NAME
-          value: "your-storage-bucket"
-        - name: BIGQUERY_DATASET
-          value: "iot_dataset"
-        - name: BIGQUERY_TABLE
-          value: "sensor_data"
 
-        # Good practice for long-running subscribers
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "sleep 5"]
+        # Load all config values from ConfigMap (recommended)
+        envFrom:
+        - configMapRef:
+            name: iot-processor-config
 
+        # Optional resource requests/limits
         resources:
           requests:
             cpu: "200m"
@@ -45,7 +36,13 @@ spec:
             cpu: "500m"
             memory: "512Mi"
 
-        # Optional: add logging sidecar OR probes if needed
+        # Optional, but helps prevent message loss on shutdown
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+
+        # Probes (safe defaults)
         readinessProbe:
           exec:
             command: ["pgrep", "python"]
