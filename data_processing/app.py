@@ -36,6 +36,7 @@ logging.error("TEST ALERT: Intentional test error on startup to validate logging
 #       LOAD WORD LIST
 # -------------------------------
 
+
 def load_words():
     """Load word list from words.txt; required for readable message IDs."""
     words_path = os.path.join(os.path.dirname(__file__), "words.txt")
@@ -43,7 +44,7 @@ def load_words():
     print(f"Loading word list from: {words_path}")
 
     if not os.path.exists(words_path):
-        raise FileNotFoundError("words.txt not found. Ensure it is included in the Docker image or mounted via ConfigMap.")
+        raise FileNotFoundError("words.txt not found.")
 
     with open(words_path, "r") as f:
         words = [line.strip() for line in f.readlines() if line.strip()]
