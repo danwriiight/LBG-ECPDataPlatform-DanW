@@ -19,7 +19,7 @@ spec:
 
       containers:
       - name: iot-processor
-        image: europe-west2-docker.pkg.dev/YOUR_PROJECT/iot-processor-repo/iot-processor:latest
+        image: europe-west2-docker.pkg.dev/lbg-ecpdataplatform/iot-processor-repo/iot-processor:latest
         imagePullPolicy: Always
 
         # Load all config values from ConfigMap (recommended)
