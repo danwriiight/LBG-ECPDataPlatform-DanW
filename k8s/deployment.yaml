@@ -42,15 +42,13 @@ spec:
             exec:
               command: ["/bin/sh", "-c", "sleep 5"]
 
-        # Probes (safe defaults)
-        readinessProbe:
-          exec:
-            command: ["pgrep", "python"]
-          initialDelaySeconds: 10
-          periodSeconds: 10
+# Probes disabled (python-slim image does not include pgrep)
+# TODO: Replace with proper HTTP probe when service is exposed
+# readinessProbe:
+#   exec:
+#     command: ["pgrep", "python"]
 
-        livenessProbe:
-          exec:
-            command: ["pgrep", "python"]
-          initialDelaySeconds: 20
-          periodSeconds: 20
+# livenessProbe:
+#   exec:
+#     command: ["pgrep", "python"]
+
