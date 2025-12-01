@@ -44,7 +44,9 @@ module "node_sa" {
   roles = [
     "roles/logging.logWriter",
     "roles/monitoring.metricWriter",
-    "roles/storage.objectViewer"
+    "roles/storage.objectViewer",
+    "roles/artifactregistry.reader"
+
   ]
 }
 

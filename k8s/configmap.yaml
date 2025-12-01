@@ -6,6 +6,6 @@ metadata:
 data:
   PROJECT_ID: "lbg-ecpdataplatform"
   SUBSCRIPTION_ID: "lbg-ecpdataplatform-dev-iot-topic-sub"
-  BUCKET_NAME: " lbg-ecpdataplatform-dev-data-bucket"
+  BUCKET_NAME: "lbg-ecpdataplatform-dev-data-bucket"
   BIGQUERY_DATASET: "dev_dataset"
   BIGQUERY_TABLE: "iot_table"
