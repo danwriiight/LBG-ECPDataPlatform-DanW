@@ -1,39 +1,79 @@
-image: google/cloud-sdk:latest
-
-variables:
-  IMAGE_NAME: "iot-processor"
-  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
-  IMAGE_URI: "gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG"
-
 stages:
   - build
   - deploy
 
-before_script:
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-  - eval $(ssh-agent -s)
-  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
-  - ssh-keyscan github.com >> ~/.ssh/known_hosts
-  - git clone "$GITHUB_REPO" repo
-  - cd repo/data_processing
-
 build:
   stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+
+  variables:
+    DOCKER_DRIVER: overlay2
+    IMAGE_NAME: "iot-processor"
+    IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+    IMAGE_URI: "europe-west2-docker.pkg.dev/$GCP_PROJECT_ID/iot-processor-repo/iot-processor:$CI_COMMIT_SHORT_SHA"
+
+  before_script:
+    - apk add --no-cache git curl bash python3 py3-pip
+    - git clone https://github.com/danwriiight/LBG-ECPDataPlatform-DanW.git repo
+    - cd repo/data_processing
+    - curl -sSL https://sdk.cloud.google.com | bash
+    - export PATH="/root/google-cloud-sdk/bin:$PATH"
+    - gcloud auth activate-service-account --key-file "$GCP_SA_JSON_FILE"
+    - gcloud config set project $GCP_PROJECT_ID
+    - gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+
   script:
-    - gcloud auth configure-docker gcr.io
-    - docker build -t $IMAGE_URI .
-    - docker push $IMAGE_URI
+    - echo "Building & Pushing Docker image"
+    - echo "IMAGE_URI=$IMAGE_URI" >> "$CI_PROJECT_DIR/build.env"
+    - docker build -t "$IMAGE_URI" .
+    - docker push "$IMAGE_URI"
+
   only:
     - main
 
+  artifacts:
+    expire_in: 1 hour
+    reports:
+      dotenv: build.env
+
+# -------------------------------
+# DEPLOY STAGE: Apply to GKE
+# -------------------------------
 deploy:
   stage: deploy
-  script:
+  image: google/cloud-sdk:latest
+
+  needs:
+    - build
+
+  before_script:
+    # Clone repo to access k8s/ manifests
+    - git clone https://github.com/danwriiight/LBG-ECPDataPlatform-DanW.git repo
+    - cd repo/k8s
+
+    # Authenticate to GCP
+    - gcloud auth activate-service-account --key-file "$GCP_SA_JSON_FILE"
+    - gcloud config set project $GCP_PROJECT_ID
+
+    # Get cluster credentials
     - gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE --project $GCP_PROJECT_ID
-    - kubectl apply -f ../k8s/configmap.yaml
+
+  script:
+    - echo "Applying Service Account..."
+    - kubectl apply -f consumer-sa.yaml --validate=false
+    
+    - echo "Applying ConfigMap..."
+    - kubectl apply -f configmap.yaml --validate=false
+
+    - echo "Applying Deployment..."
+    - kubectl apply -f deployment.yaml --validate=false
+
+    - echo "Updating image to $IMAGE_URI"
     - kubectl set image deployment/iot-processor iot-processor=$IMAGE_URI -n default
-    - kubectl apply -f ../k8s/deployment.yaml
-  only:
-    - main
+
+    - echo "Waiting for rollout..."
+    - kubectl rollout status deployment/iot-processor -n default
+
+    - echo "Deployment complete!"

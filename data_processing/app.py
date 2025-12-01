@@ -2,6 +2,7 @@ import json
 import os
 import time
 import random
+import logging
 from datetime import datetime
 
 from google.cloud import storage
@@ -26,6 +27,10 @@ print(f"SUBSCRIPTION_ID={SUBSCRIPTION_ID}")
 print(f"BUCKET_NAME={BUCKET_NAME}")
 print(f"BIGQUERY: {BIGQUERY_DATASET}.{BIGQUERY_TABLE}")
 
+# -------------------------------
+#   TEST ERROR FOR ALERTING
+# -------------------------------
+logging.error("TEST ALERT: Intentional test error on startup to validate logging pipeline")
 
 # -------------------------------
 #       LOAD WORD LIST
