@@ -3,3 +3,5 @@ kind: ServiceAccount
 metadata:
   name: consumer-sa
   namespace: default
+  annotations:
+    iam.gke.io/gcp-service-account: dev-gke-consumer@lbg-ecpdataplatform.iam.gserviceaccount.com
