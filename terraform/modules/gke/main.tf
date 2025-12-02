@@ -1,21 +1,27 @@
+# GKE cluster definition
 resource "google_container_cluster" "gke" {
   name     = var.name
   location = var.location
 
-  deletion_protection = false
+  deletion_protection = false # Allow terraform destroy
 
+  # Remove default node pool to manage node pools explicitly
   remove_default_node_pool = true
   initial_node_count       = 1
 
+  # Networking configuration
   network    = var.network
   subnetwork = var.subnetwork
 
+  # Automatically assign pod and service CIDRs
   ip_allocation_policy {}
 
+  # Use the regular release channel for cluster upgrades
   release_channel {
     channel = "REGULAR"
   }
 
+  # Enable Workload Identity for secure pod-to-GCP identity mapping
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
@@ -48,6 +54,7 @@ resource "google_container_cluster" "gke" {
   }
 }
 
+# Node pool for the cluster
 resource "google_container_node_pool" "primary" {
   name = "primary-pool"
   cluster = google_container_cluster.gke.name
@@ -56,6 +63,7 @@ resource "google_container_node_pool" "primary" {
   node_config {
     machine_type = var.machine_type
     service_account = var.node_service_account
+    # Full cloud-platform scope; acceptable since Workload Identity is used
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 

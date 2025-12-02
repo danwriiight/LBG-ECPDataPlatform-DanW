@@ -1,7 +1,10 @@
+# ServiceAccount used by the IoT consumer application running on GKE
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: consumer-sa
   namespace: default
   annotations:
+  # Bind this Kubernetes ServiceAccount to a specific Google Cloud IAM Service Account
+  # via Workload Identity. This grants the Pod GCP permissions securely.
     iam.gke.io/gcp-service-account: dev-gke-consumer@lbg-ecpdataplatform.iam.gserviceaccount.com

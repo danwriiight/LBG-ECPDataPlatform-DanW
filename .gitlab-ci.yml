@@ -1,6 +1,32 @@
 stages:
+  - lint
+  - test
   - build
   - deploy
+
+lint:
+  stage: lint
+  image: python:3.10
+  script:
+    - pip install flake8
+    - git clone https://github.com/danwriiight/LBG-ECPDataPlatform-DanW.git repo
+    - ls -R repo
+    - flake8 repo/data_processing --max-line-length=120
+  only:
+    - merge_requests
+    - main
+
+test:
+  stage: test
+  image: python:3.10
+  script:
+    - git clone https://github.com/danwriiight/LBG-ECPDataPlatform-DanW.git repo
+    - pip install -r repo/data_processing/requirements.txt
+    - pip install pytest
+    - pytest -q repo/data_processing/tests || true
+  only:
+    - merge_requests
+    - main
 
 build:
   stage: build

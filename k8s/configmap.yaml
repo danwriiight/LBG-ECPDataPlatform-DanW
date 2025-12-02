@@ -1,3 +1,4 @@
+# Kubernetes ConfigMap providing environment variables for the IoT processor
 apiVersion: v1
 kind: ConfigMap
 metadata:

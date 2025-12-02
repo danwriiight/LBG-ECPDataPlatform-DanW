@@ -1,12 +1,15 @@
+# Deployment for the IoT Processor application running on GKE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: iot-processor
-  namespace: default   # change if your namespace is different
+  namespace: default   # Modify if using different namespace
   labels:
     app: iot-processor
 spec:
+  # Number of application replicas for scalability and resilience
   replicas: 2
+  # Selector that identifies which Pods belong to this Deployment
   selector:
     matchLabels:
       app: iot-processor
@@ -15,19 +18,21 @@ spec:
       labels:
         app: iot-processor
     spec:
+      # Kubernetes ServiceAccount used by Pods for Workload Identity
       serviceAccountName: consumer-sa   # MUST match var.ksa_binding.ksa_name
 
       containers:
       - name: iot-processor
+        # Container image stored in Artifact Registry
         image: europe-west2-docker.pkg.dev/lbg-ecpdataplatform/iot-processor-repo/iot-processor:dev
         imagePullPolicy: Always
 
-        # Load all config values from ConfigMap (recommended)
+        # Load environment variables from ConfigMap
         envFrom:
         - configMapRef:
             name: iot-processor-config
 
-        # Optional resource requests/limits
+        # Resource guarantees and safety limits
         resources:
           requests:
             cpu: "200m"
@@ -36,7 +41,8 @@ spec:
             cpu: "500m"
             memory: "512Mi"
 
-        # Optional, but helps prevent message loss on shutdown
+        # Delay shutdown slightly to allow Pub/Sub processing to finish
+        # Helps prevent message loss on shutdown
         lifecycle:
           preStop:
             exec:

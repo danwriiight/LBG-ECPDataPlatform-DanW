@@ -1,4 +1,6 @@
+# Specify Terraform version and provider constraints
 terraform {
+  # Minimum Terraform version required for this configuration
   required_version = ">= 1.6.0"
 
   required_providers {

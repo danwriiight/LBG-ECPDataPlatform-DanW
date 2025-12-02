@@ -10,10 +10,7 @@ from google.cloud import bigquery
 from google.cloud import pubsub_v1
 
 
-# -------------------------------
-#        ENVIRONMENT VARS
-# -------------------------------
-
+# Load environment variables required for GCP services
 print("Starting data processing application... loading environment variables")
 
 PROJECT_ID = os.environ["PROJECT_ID"]
@@ -27,14 +24,10 @@ print(f"SUBSCRIPTION_ID={SUBSCRIPTION_ID}")
 print(f"BUCKET_NAME={BUCKET_NAME}")
 print(f"BIGQUERY: {BIGQUERY_DATASET}.{BIGQUERY_TABLE}")
 
-# -------------------------------
-#   TEST ERROR FOR ALERTING
-# -------------------------------
+# Emit a test error to confirm logging works end to end
 logging.error("TEST ALERT: Intentional test error on startup to validate logging pipeline")
 
-# -------------------------------
-#       LOAD WORD LIST
-# -------------------------------
+# Load a list of words used to generate readable message IDs
 
 
 def load_words():
@@ -53,12 +46,11 @@ def load_words():
     return words
 
 
+# Global word list
 WORDS = load_words()
 
 
-# -------------------------------
-#        GCP CLIENTS
-# -------------------------------
+# Create GCP clients for Storage, BigQuery and Pub/Sub
 
 print("Initialising GCP clients (Storage, BigQuery, Pub/Sub)...")
 
@@ -71,9 +63,8 @@ table_ref = bq_client.dataset(BIGQUERY_DATASET).table(BIGQUERY_TABLE)
 print("GCP clients initialised successfully.")
 
 
-# -------------------------------
-#        CRITICAL FIELDS
-# -------------------------------
+# Define fields required for a record to be treated as complete
+
 
 CRITICAL_FIELDS = [
     "sensor_id",
@@ -88,18 +79,15 @@ CRITICAL_FIELDS = [
 ]
 
 
-# -------------------------------
-#        UTILITY HELPERS
-# -------------------------------
+# Create a readable random message ID
+
 
 def generate_message_id():
     """Human-readable ID: three random words."""
     return "-".join(random.choice(WORDS) for _ in range(3))
 
+# Write raw JSON data to GCS for audit trail
 
-# -------------------------------
-#        STORAGE HELPERS
-# -------------------------------
 
 def write_raw_to_gcs(message_dict, msg_id):
     filename = f"raw-{msg_id}.json"
@@ -108,6 +96,8 @@ def write_raw_to_gcs(message_dict, msg_id):
     blob.upload_from_string(json.dumps(message_dict))
     print(f"[{msg_id}] RAW file written.")
     return True
+
+# Write cleaned record to GCS
 
 
 def write_processed_to_gcs(processed_record, msg_id):
@@ -119,9 +109,8 @@ def write_processed_to_gcs(processed_record, msg_id):
     return True
 
 
-# -------------------------------
-#        CLEANING HELPERS
-# -------------------------------
+# Convert incoming values to a numeric type if possible
+
 
 def normalise_value(value, to_type=float):
     try:
@@ -130,6 +119,8 @@ def normalise_value(value, to_type=float):
         return to_type(value)
     except Exception:
         return None
+
+# Clean and standardise device status strings
 
 
 def clean_status(status):
@@ -157,6 +148,8 @@ def clean_battery(value):
         return "HIGH"
     return None
 
+# Transform and normalise the raw message into a clean record
+
 
 def process_record(raw):
     return {
@@ -173,18 +166,14 @@ def process_record(raw):
         "processed_at": datetime.utcnow().isoformat()
     }
 
+# Check if required fields are present
 
-# -------------------------------
-#        VALIDATION LOGIC
-# -------------------------------
 
 def is_incomplete(processed):
     return any(processed.get(f) is None for f in CRITICAL_FIELDS)
 
+# Insert cleaned record into BigQuery
 
-# -------------------------------
-#        BIGQUERY WRITER
-# -------------------------------
 
 def write_to_bigquery(record):
     print(f"[{record['message_id']}] Inserting into BigQuery...")
@@ -195,10 +184,8 @@ def write_to_bigquery(record):
     print(f"[{record['message_id']}] Inserted into BigQuery.")
     return True
 
+# Handle incoming Pub/Sub messages
 
-# -------------------------------
-#        PUBSUB CALLBACK
-# -------------------------------
 
 def callback(message):
     msg_id = generate_message_id()
@@ -233,10 +220,8 @@ def callback(message):
         print(f"[{msg_id}] ERROR: {e}")
         message.nack()
 
+# Main application loop that runs the Pub/Sub listener
 
-# -------------------------------
-#            MAIN LOOP
-# -------------------------------
 
 def main():
     print("Initialising Pub/Sub subscription listener...")
