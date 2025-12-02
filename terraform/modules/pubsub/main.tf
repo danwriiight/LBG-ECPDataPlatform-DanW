@@ -23,3 +23,5 @@ resource "google_pubsub_subscription" "subscription" {
     ttl = "" # never expire
   }
 }
+
+## TODO: Add dead-letter topics / retries
